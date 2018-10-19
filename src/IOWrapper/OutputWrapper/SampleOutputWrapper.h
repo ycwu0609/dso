@@ -27,10 +27,14 @@
 #include "util/MinimalImage.h"
 #include "IOWrapper/Output3DWrapper.h"
 
-
+#include "IOWrapper/ImageDisplay.h"
+#include <opencv2/highgui/highgui.hpp>
+#include "iostream"
 
 #include "FullSystem/HessianBlocks.h"
 #include "util/FrameShell.h"
+
+
 
 namespace dso
 {
@@ -46,6 +50,9 @@ namespace IOWrap
 class SampleOutputWrapper : public Output3DWrapper
 {
 public:
+		cv::Mat img;
+		boost::mutex imgMutex;
+
         inline SampleOutputWrapper()
         {
             printf("OUT: Created SampleOutputWrapper\n");
@@ -55,7 +62,7 @@ public:
         {
             printf("OUT: Destroyed SampleOutputWrapper\n");
         }
-
+		/*
         virtual void publishGraph(const std::map<uint64_t, Eigen::Vector2i, std::less<uint64_t>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Vector2i>>> &connectivity) override
         {
             printf("OUT: got graph with %d edges\n", (int)connectivity.size());
@@ -70,10 +77,10 @@ public:
                 maxWrite--;
                 if(maxWrite==0) break;
             }
-        }
+        }*/
 
 
-
+		/*
         virtual void publishKeyframes( std::vector<FrameHessian*> &frames, bool final, CalibHessian* HCalib) override
         {
             for(FrameHessian* f : frames)
@@ -96,8 +103,8 @@ public:
                     if(maxWrite==0) break;
                 }
             }
-        }
-
+        }*/
+		/*
         virtual void publishCamPose(FrameShell* frame, CalibHessian* HCalib) override
         {
             printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",
@@ -106,7 +113,7 @@ public:
                    frame->id);
             std::cout << frame->camToWorld.matrix3x4() << "\n";
         }
-
+		*/
 
         virtual void pushLiveFrame(FrameHessian* image) override
         {
@@ -116,6 +123,19 @@ public:
         virtual void pushDepthImage(MinimalImageB3* image) override
         {
             // can be used to get the raw image with depth overlay.
+			//cv::namedWindow("Depth", cv::WINDOW_NORMAL);
+			//cv::resizeWindow("Depth", image.cols, image.rows);
+			//openWindows.insert("Depth");
+			//if(image->at(100,100) != 0){
+				//cv::namedWindow( "Depth", cv::WINDOW_AUTOSIZE );
+				//cv::imshow("Depth", image);
+				//cv::waitKey(0);
+				std::cout << "IMAGE = "<< " "  << image << std::endl;
+				//displayImage("Depth",image,false);
+				//waitKey(0); 
+//				closeAllWindows;
+				std::cout << " "  << std::endl;
+			//} 
         }
         virtual bool needPushDepthImage() override
         {
@@ -124,6 +144,7 @@ public:
 
         virtual void pushDepthImageFloat(MinimalImageF* image, FrameHessian* KF ) override
         {
+        	//boost::unique_lock<boost::mutex> lock(imgMutex);
             printf("OUT: Predicted depth for KF %d (id %d, time %f, internal frame-ID %d). CameraToWorld:\n",
                    KF->frameID,
                    KF->shell->incoming_id,
@@ -131,6 +152,8 @@ public:
                    KF->shell->id);
             std::cout << KF->shell->camToWorld.matrix3x4() << "\n";
 
+			img = cv::Mat(image->h, image->w, CV_32F, image->data);
+			
             int maxWrite = 5;
             for(int y=0;y<image->h;y++)
             {
@@ -138,14 +161,24 @@ public:
                 {
                     if(image->at(x,y) <= 0) continue;
 
-                    printf("OUT: Example Idepth at pixel (%d,%d): %f.\n", x,y,image->at(x,y));
-                    maxWrite--;
+                    //printf("OUT: Example Idepth at pixel (%d,%d): %f.\n", x,y,image->at(x,y));
+                    //maxWrite--;
                     if(maxWrite==0) break;
                 }
                 if(maxWrite==0) break;
             }
+            cv::imshow("Depth", img);
+            waitKey(1);
+            //outputDepthImage();
+            //displayImage("Depth_1", image);
+            //waitKey(1);
+            //outputDepthImage();
         }
-
+		
+		virtual cv::Mat outputDepthImage()
+		{
+			return img;	
+		}
 
 };
 

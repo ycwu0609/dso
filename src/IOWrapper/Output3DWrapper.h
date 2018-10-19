@@ -29,12 +29,13 @@
 
 #include "util/NumType.h"
 #include "util/MinimalImage.h"
+#include <opencv2/highgui/highgui.hpp>
 #include "map"
-
+/*
 namespace cv {
         class Mat;
 }
-
+*/
 namespace dso
 {
 
@@ -194,7 +195,8 @@ public:
          * Always called, almost no overhead if not used.
          */
         virtual void pushDepthImageFloat(MinimalImageF* image, FrameHessian* KF ) {}
-
+		
+		virtual cv::Mat outputDepthImage(){return cv::Mat(0, 0, CV_32F);}
 
 
         /* call on finish */
